@@ -31,7 +31,6 @@ db_url = URL.create(
     port=int(db_port),
     database=db_name
 )
-print(repr(db_name))
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -57,7 +56,7 @@ def users():
 @app.route('/test-db')
 def test_db():
     user = User.query.first()
-    return "Database connection successful! First user: " + (user.name if user else "No users found.")
+    return "Database connection successful! First user: " + (user.username if user else "No users found.")
 
 if __name__ == '__main__':
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']

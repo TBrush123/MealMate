@@ -33,4 +33,4 @@ class FridgeItem(db.Model):
     ingredient = db.relationship('Ingredient', backref=db.backref('fridgeItems', lazy=True))
 
     def __repr__(self):
-        return f'<FridgeItem {self.quantity} {self.unit} of {self.ingredient.name} for {self.user.name}>'
+        return f'<FridgeItem {self.quantity} {self.unit} of {self.ingredient.name} for {self.user.username}>'
