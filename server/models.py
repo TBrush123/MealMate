@@ -5,7 +5,7 @@ class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
     dietary_restrictions = db.Column(JSONB, default=list)
 
     def __repr__(self):
@@ -34,3 +34,14 @@ class FridgeItem(db.Model):
 
     def __repr__(self):
         return f'<FridgeItem {self.quantity} {self.unit} of {self.ingredient.name} for {self.user.username}>'
+
+class RevokedToken(db.Model):
+    __tablename__ = 'revoked_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(36), nullable=False, unique=True)
+    user_id = db.Column(db.Integer, nullable=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    revoked_at = db.Column(db.DateTime, nullable=False)
+
+    def __repr__(self):
+        return f'<RevokedToken {self.jti} for user {self.user_id}>'
