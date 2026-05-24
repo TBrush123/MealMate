@@ -123,7 +123,7 @@ def logout():
         return jsonify({"error": "Invalid token."}), 401
 
     expires_timestamp = get_jwt().get('exp')
-    expires_at = datetime.fromtimestamp(expires_timestamp) if expires_timestamp else datetime.utcnow()
+    expires_at = datetime.fromtimestamp(expires_timestamp) if expires_timestamp else datetime.now()
     revoked_token = RevokedToken(
         jti=jti,
         user_id=get_jwt_identity(),
@@ -172,6 +172,10 @@ def add_dietary_restrictions():
 @jwt_required()
 def debug_restrictions():
     user = User.query.get(get_jwt_identity())
+    
+    if not user:
+        return jsonify({"error": "User not found."}), 404
+
     return jsonify([r.name for r in user.dietary_restrictions])
 
 
