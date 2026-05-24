@@ -12,7 +12,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, InvalidHashError
 
 from extensions import db
-from models import User, Ingredient, FridgeItem, RevokedToken
+from models import User, Ingredient, FridgeItem, RevokedToken, DietaryRestriction
 
 load_dotenv()
 
@@ -60,8 +60,8 @@ def check_if_token_revoked(jwt_header, jwt_payload):
 
 # Authorization
 
-@app.route('/api/users', methods=['GET'])
-def users():
+@app.route('/api/auth/register', methods=['POST'])
+def register():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
@@ -110,7 +110,7 @@ def login():
 
     try:
         ph.verify(user.password_hash, password)
-        access_token = create_access_token(identity=user.id)
+        access_token = create_access_token(identity=str(user.id))
         return jsonify({"access_token": access_token, "message": "Login successful."}), 200
     except (VerifyMismatchError, InvalidHashError):
         return jsonify({"error": "Invalid username or password."}), 401
@@ -123,12 +123,12 @@ def logout():
         return jsonify({"error": "Invalid token."}), 401
 
     expires_timestamp = get_jwt().get('exp')
-    expires_at = datetime.utcfromtimestamp(expires_timestamp) if expires_timestamp else datetime.utcnow()
+    expires_at = datetime.fromtimestamp(expires_timestamp) if expires_timestamp else datetime.utcnow()
     revoked_token = RevokedToken(
         jti=jti,
         user_id=get_jwt_identity(),
         expires_at=expires_at,
-        revoked_at=datetime.utcnow()
+        revoked_at=datetime.now()
     )
     db.session.add(revoked_token)
     db.session.commit()
@@ -141,6 +141,39 @@ def refresh():
     current_user_id = get_jwt_identity()
     new_access_token = create_access_token(identity=current_user_id)
     return jsonify({"access_token": new_access_token}), 200
+
+# Dietary Restrictions
+
+@app.route('/api/users/dietary-restrictions', methods=['PUT'])
+@jwt_required()
+def add_dietary_restrictions():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({"error": "User not found."}), 404
+    
+    data = request.get_json()
+    new_restrictions = data.get('dietary_restrictions', [])
+    print(f"Received new restrictions: {new_restrictions}")
+
+    restrictions = DietaryRestriction.query.filter(DietaryRestriction.name.in_(new_restrictions)).all()
+    print(f"Found restrictions: {[r.name for r in restrictions]}")
+
+    user.dietary_restrictions = restrictions
+
+    db.session.commit()
+    return jsonify({"message": "Dietary restrictions updated successfully."}), 200
+
+
+
+# Tests
+@app.route('/api/debug/my-restrictions', methods=['GET'])
+@jwt_required()
+def debug_restrictions():
+    user = User.query.get(get_jwt_identity())
+    return jsonify([r.name for r in user.dietary_restrictions])
+
 
 @app.route('/test-db')
 def test_db():

@@ -1,12 +1,22 @@
 from sqlalchemy.dialects.postgresql import JSONB
 from extensions import db
 
+user_dietary_restrictions = db.Table('user_dietary_restrictions',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('restriction_id', db.Integer, db.ForeignKey('dietary_restrictions.id'), primary_key=True)
+)
+
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    dietary_restrictions = db.Column(JSONB, default=list)
+
+    dietary_restrictions = db.relationship(
+        'DietaryRestriction', 
+        secondary=user_dietary_restrictions, 
+        backref='users'
+    )
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -34,6 +44,14 @@ class FridgeItem(db.Model):
 
     def __repr__(self):
         return f'<FridgeItem {self.quantity} {self.unit} of {self.ingredient.name} for {self.user.username}>'
+
+class DietaryRestriction(db.Model):
+    __tablename__ = 'dietary_restrictions'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), nullable=False, unique=True)
+
+    def __repr__(self):
+        return f'<DietaryRestriction {self.name}>'
 
 class RevokedToken(db.Model):
     __tablename__ = 'revoked_tokens'
